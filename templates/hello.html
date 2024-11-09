@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            width: 100%;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: #075e54;
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin: 5px 0;
+            position: relative;
+        }
+
+        .message .timestamp {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .user-message {
+            background: #dcf8c6;
+            align-self: flex-end;
+            border-radius: 15px 15px 0 15px;
+        }
+
+        .bot-message {
+            background: #e8e8e8;
+            align-self: flex-start;
+            border-radius: 15px 15px 15px 0;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 1em;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: #075e54;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .send-button:hover {
+            background: #128c7e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Flask Chat</h1>
+        </div>
+        
+        <div class="chat-messages">
+            {% for message in messages %}
+                <div class="message {{ 'user-message' if message.sender == 'user' else 'bot-message' }}">
+                    {{ message.text }}
+                    <div class="timestamp">{{ message.timestamp }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="chat-input">
+            <form class="chat-form" id="chatForm">
+                <input type="text" name="message" class="message-input" placeholder="Type a message..." autocomplete="off" required>
+                <button type="submit" class="send-button">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.querySelector('#chatForm');
+        const messageInput = document.querySelector('.message-input');
+        const messagesDiv = document.querySelector('.chat-messages');
+
+        chatForm.addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent default form submission
+
+            const messageText = messageInput.value;
+            if (messageText.trim() === "") return;
+
+            // Clear the input field
+            messageInput.value = "";
+
+            // Send message via AJAX
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `message=${encodeURIComponent(messageText)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update chat with the new messages
+                updateChat(data.messages);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function updateChat(messages) {
+            messagesDiv.innerHTML = '';  // Clear the chat display
+
+            messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`;
+                messageDiv.innerHTML = `
+                    <div>${message.text}</div>
+                    <div class="timestamp">${message.timestamp}</div>
+                `;
+                messagesDiv.appendChild(messageDiv);
+            });
+
+            // Scroll to the bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Scroll to bottom when window loads
+        window.onload = function() {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        };
+    </script>
+</body>
+
+</html>
